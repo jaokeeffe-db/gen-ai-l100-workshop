@@ -66,9 +66,9 @@ print(f"Catalog '{CATALOG}' and schema '{FULL_SCHEMA}' are ready.")
 # MAGIC ## Step 2: Create Education Data Tables
 # MAGIC
 # MAGIC This generates synthetic data for a fictional online learning platform called **EduPath Academy**:
-# MAGIC - **customers** — 200 students with enrollment tiers and academic preferences
-# MAGIC - **products** — ~500 courses across 10 departments
-# MAGIC - **stores** — 10 EduPath campus locations
+# MAGIC - **students** — 200 students with enrollment tiers and academic preferences
+# MAGIC - **courses** — ~500 courses across 10 departments
+# MAGIC - **campuses** — 10 EduPath campus locations
 # MAGIC - **transactions** — 2,000 enrollment records
 # MAGIC - **transaction_items** — ~8,000 course enrollment line items
 # MAGIC - **payment_history** — 400 tuition payment records
@@ -127,7 +127,7 @@ LEARNING_STYLES = ["visual", "auditory", "reading", "kinesthetic", "hybrid", "se
 FAVORITE_DEPARTMENTS = ["Computer Science", "Mathematics", "Business", "Engineering", "Arts", "Sciences", "Humanities", "Health Sciences", "Education"]
 PAYMENT_METHODS = ["credit_card", "debit_card", "financial_aid", "scholarship", "wire_transfer"]
 
-PRODUCTS_BY_CATEGORY = {
+COURSES_BY_CATEGORY = {
     "Computer Science": [
         ("Introduction to Python", "Dr. Chen", 299.99, "3 credits"), ("Data Structures & Algorithms", "Dr. Kumar", 349.99, "4 credits"),
         ("Machine Learning Fundamentals", "Dr. Zhang", 399.99, "3 credits"), ("Web Development", "Prof. Miller", 279.99, "3 credits"),
@@ -237,7 +237,7 @@ print("Domain data loaded. Generating tables...")
 
 # COMMAND ----------
 
-customers = []
+students = []
 for i in range(1, 201):
     first = random.choice(FIRST_NAMES)
     last = random.choice(LAST_NAMES)
@@ -247,8 +247,8 @@ for i in range(1, 201):
         "favorite_departments": random.sample(FAVORITE_DEPARTMENTS, k=random.randint(1, 3)),
         "full_time": random.choice([True, False]),
     }
-    customers.append({
-        "customer_id": f"CUST-{i:04d}",
+    students.append({
+        "student_id": f"STUD-{i:04d}",
         "first_name": first,
         "last_name": last,
         "email": random_email(first, last),
@@ -262,9 +262,9 @@ for i in range(1, 201):
         "preferences": json.dumps(prefs),
     })
 
-customers_df = spark.createDataFrame(customers)
-customers_df.write.mode("overwrite").saveAsTable(f"{FULL_SCHEMA}.customers")
-print(f"Created {FULL_SCHEMA}.customers — {customers_df.count()} rows")
+students_df = spark.createDataFrame(students)
+students_df.write.mode("overwrite").saveAsTable(f"{FULL_SCHEMA}.students")
+print(f"Created {FULL_SCHEMA}.students — {students_df.count()} rows")
 
 # COMMAND ----------
 
@@ -274,47 +274,47 @@ print(f"Created {FULL_SCHEMA}.customers — {customers_df.count()} rows")
 
 # COMMAND ----------
 
-products = []
+courses = []
 pid = 1
 buildings = {}
 building_num = 1
-for cat in PRODUCTS_BY_CATEGORY:
+for cat in COURSES_BY_CATEGORY:
     if cat not in buildings:
         buildings[cat] = building_num
         building_num += 1
-    for name, instructor, price, unit in PRODUCTS_BY_CATEGORY[cat]:
-        products.append({
-            "product_id": f"PROD-{pid:04d}",
+    for name, instructor, price, unit in COURSES_BY_CATEGORY[cat]:
+        courses.append({
+            "course_id": f"COURSE-{pid:04d}",
             "name": name,
             "category": cat,
-            "brand": instructor,
+            "instr": instructor,
             "price": round(price, 2),
-            "stock_quantity": random.randint(15, 120),  # available seats
-            "aisle": buildings[cat],  # building number
+            "avail_seats": random.randint(15, 120),  # available seats
+            "building": buildings[cat],  # building number
             "unit": unit,
         })
         pid += 1
 
 # Pad to ~500 courses with level variations
-while len(products) < 500:
-    cat = random.choice(list(PRODUCTS_BY_CATEGORY.keys()))
-    base = random.choice(PRODUCTS_BY_CATEGORY[cat])
+while len(courses) < 500:
+    cat = random.choice(list(COURSES_BY_CATEGORY.keys()))
+    base = random.choice(COURSES_BY_CATEGORY[cat])
     variation = random.choice(["Advanced ", "Honors ", "Graduate ", "Intensive ", "Online "])
-    products.append({
-        "product_id": f"PROD-{pid:04d}",
+    courses.append({
+        "course_id": f"COURSE-{pid:04d}",
         "name": f"{variation}{base[0]}",
         "category": cat,
-        "brand": base[1],
+        "instr": base[1],
         "price": round(base[2] * random.uniform(0.8, 1.5), 2),
-        "stock_quantity": random.randint(15, 120),
-        "aisle": buildings[cat],
+        "avail_seats": random.randint(15, 120),
+        "building": buildings[cat],
         "unit": base[3],
     })
     pid += 1
 
-products_df = spark.createDataFrame(products)
-products_df.write.mode("overwrite").saveAsTable(f"{FULL_SCHEMA}.products")
-print(f"Created {FULL_SCHEMA}.products — {products_df.count()} rows")
+courses_df = spark.createDataFrame(courses)
+courses_df.write.mode("overwrite").saveAsTable(f"{FULL_SCHEMA}.courses")
+print(f"Created {FULL_SCHEMA}.courses — {courses_df.count()} rows")
 
 # COMMAND ----------
 
@@ -324,11 +324,11 @@ print(f"Created {FULL_SCHEMA}.products — {products_df.count()} rows")
 
 # COMMAND ----------
 
-stores = []
+campuses = []
 for i, name in enumerate(CAMPUS_NAMES, 1):
     city, state = CITIES_STATES[i % len(CITIES_STATES)]
-    stores.append({
-        "store_id": f"STORE-{i:02d}",
+    campuses.append({
+        "campus_id": f"CAMPUS-{i:02d}",
         "name": name,
         "address": f"{random.randint(100,9999)} {random.choice(STREETS)}",
         "city": city,
@@ -338,9 +338,9 @@ for i, name in enumerate(CAMPUS_NAMES, 1):
         "phone": random_phone(),
     })
 
-stores_df = spark.createDataFrame(stores)
-stores_df.write.mode("overwrite").saveAsTable(f"{FULL_SCHEMA}.stores")
-print(f"Created {FULL_SCHEMA}.stores — {stores_df.count()} rows")
+campuses_df = spark.createDataFrame(campuses)
+campuses_df.write.mode("overwrite").saveAsTable(f"{FULL_SCHEMA}.campuses")
+print(f"Created {FULL_SCHEMA}.campuses — {campuses_df.count()} rows")
 
 # COMMAND ----------
 
@@ -350,56 +350,56 @@ print(f"Created {FULL_SCHEMA}.stores — {stores_df.count()} rows")
 
 # COMMAND ----------
 
-transactions = []
-transaction_items = []
+enrollments = []
+enrollment_items = []
 item_id = 1
 
 for txn_id in range(1, 2001):
-    customer = random.choice(customers)
-    store = random.choice(stores)
+    student = random.choice(students)
+    campus = random.choice(campuses)
     txn_date = datetime(2024, 1, 1) + timedelta(
         days=random.randint(0, 440),
         hours=random.randint(7, 21),
         minutes=random.randint(0, 59),
     )
     num_items = random.randint(2, 6)  # courses per enrollment
-    txn_products = random.sample(products, k=min(num_items, len(products)))
+    txn_courses = random.sample(courses, k=min(num_items, len(courses)))
 
     total = 0.0
-    for prod in txn_products:
+    for prod in txn_courses:
         qty = 1  # typically 1 section per course
         discount = round(random.choice([0.0, 0.0, 0.0, 25.0, 50.0, 75.0, 100.0]), 2)  # scholarship discounts
         unit_price = prod["price"]
         line_total = round(qty * unit_price - discount, 2)
         total += line_total
 
-        transaction_items.append({
+        enrollment_items.append({
             "item_id": f"ITEM-{item_id:06d}",
             "transaction_id": f"TXN-{txn_id:05d}",
-            "product_id": prod["product_id"],
+            "course_id": prod["course_id"],
             "quantity": float(qty),
             "unit_price": unit_price,
             "discount": discount,
         })
         item_id += 1
 
-    transactions.append({
+    enrollments.append({
         "transaction_id": f"TXN-{txn_id:05d}",
-        "customer_id": customer["customer_id"],
-        "store_id": store["store_id"],
+        "student_id": student["student_id"],
+        "campus_id": campus["campus_id"],
         "transaction_date": txn_date.strftime("%Y-%m-%d %H:%M:%S"),
         "total_amount": round(total, 2),
         "payment_method": random.choice(PAYMENT_METHODS),
         "status": random.choices(["completed", "withdrawn", "pending"], weights=[85, 10, 5])[0],
     })
 
-transactions_df = spark.createDataFrame(transactions)
-transactions_df.write.mode("overwrite").saveAsTable(f"{FULL_SCHEMA}.transactions")
-print(f"Created {FULL_SCHEMA}.transactions — {transactions_df.count()} rows")
+enrollments_df = spark.createDataFrame(enrollments)
+enrollments_df.write.mode("overwrite").saveAsTable(f"{FULL_SCHEMA}.enrollments")
+print(f"Created {FULL_SCHEMA}.enrollments — {enrollments_df.count()} rows")
 
-transaction_items_df = spark.createDataFrame(transaction_items)
-transaction_items_df.write.mode("overwrite").saveAsTable(f"{FULL_SCHEMA}.transaction_items")
-print(f"Created {FULL_SCHEMA}.transaction_items — {transaction_items_df.count()} rows")
+enrollment_items_df = spark.createDataFrame(enrollment_items)
+enrollment_items_df.write.mode("overwrite").saveAsTable(f"{FULL_SCHEMA}.enrollment_items")
+print(f"Created {FULL_SCHEMA}.enrollment_items — {enrollment_items_df.count()} rows")
 
 # COMMAND ----------
 
@@ -411,15 +411,15 @@ print(f"Created {FULL_SCHEMA}.transaction_items — {transaction_items_df.count(
 
 payment_history = []
 for pay_id in range(1, 401):
-    customer = random.choice(customers)
+    student = random.choice(students)
     method = random.choice(PAYMENT_METHODS)
     card_last4 = str(random.randint(1000, 9999)) if method in ("credit_card", "debit_card") else None
     payment_history.append({
         "payment_id": f"PAY-{pay_id:04d}",
-        "customer_id": customer["customer_id"],
+        "student_id": student["student_id"],
         "payment_method": method,
         "card_last4": card_last4,
-        "billing_address": f"{random.randint(100,9999)} {random.choice(STREETS)}, {customer['city']}, {customer['state']}",
+        "billing_address": f"{random.randint(100,9999)} {random.choice(STREETS)}, {student['city']}, {student['state']}",
         "created_date": (datetime(2024, 1, 1) + timedelta(days=random.randint(0, 440))).strftime("%Y-%m-%d"),
     })
 
@@ -435,7 +435,7 @@ print(f"Created {FULL_SCHEMA}.payment_history — {payment_history_df.count()} r
 # COMMAND ----------
 
 print(f"Tables in {FULL_SCHEMA}:\n")
-tables = ["customers", "products", "stores", "transactions", "transaction_items", "payment_history"]
+tables = ["students", "courses", "campuses", "enrollments", "enrollment_items", "payment_history"]
 for table in tables:
     count = spark.sql(f"SELECT COUNT(*) as cnt FROM {FULL_SCHEMA}.{table}").collect()[0]["cnt"]
     print(f"  {table:25s} {count:>8,} rows")
@@ -727,7 +727,7 @@ import mlflow
 mlflow.set_tracking_uri("databricks")
 
 username = spark.sql("SELECT current_user()").collect()[0][0]
-experiment_name = f"/Users/{username}/edupath-agent-workshop"
+experiment_name = f"/Users/{username}/edupath-agent-workshop-{SCHEMA}"
 
 try:
     experiment = mlflow.get_experiment_by_name(experiment_name)
