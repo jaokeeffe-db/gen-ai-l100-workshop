@@ -96,12 +96,12 @@ When the notebook finishes, you'll have:
 
 | Resource | Details |
 |----------|---------|
-| 6 structured tables | customers, products, stores, transactions, transaction_items, payment_history |
+| 6 structured tables | students, courses, ampuses, enrollments, enrollment_items, payment_history |
 | 1 chunked docs table | policy_docs_chunked (~50 rows from 7 policy documents) |
-| Vector Search endpoint | `freshmart-vs-<schema>` |
+| Vector Search endpoint | `edupath-vs-<schema>` |
 | Vector Search index | `<catalog>.<schema>.policy_docs_index` |
-| Genie Space | `FreshMart Retail Data (<schema>)` |
-| MLflow Experiment | `/Users/<you>/freshmart-agent-workshop` (with artifact storage as Databricks Volume) |
+| Genie Space | `EduPath_Academy_Data (<schema>)` |
+| MLflow Experiment | `/Users/<you>/edupath-agent-workshop-<schema>` (with artifact storage as Databricks Volume) |
 | UC Function | A utility function for the agent |
 
 **Important:** Copy the output summary from the notebook. You'll need these values:
@@ -169,12 +169,12 @@ Genie converts natural language questions into SQL queries and returns results f
 
 | Question | What It Does |
 |----------|-------------|
-| "How many customers do we have?" | Simple count query |
-| "What are the top 10 products by price?" | Sort and limit |
-| "Show me revenue by store for the last 6 months" | Multi-table join with aggregation |
-| "Which membership tier spends the most on average?" | Group by with calculation |
+| "Which campuses generate the most revenue, and how does enrollment performance vary by location?" | Group by with calculation |
+| "What is the withdrawal rate?" | Simple count |
+| "How do enrollment patterns and revenue differ across student membership tiers?" | Multi-table join with aggregation |
+| "What are the trends in enrollment and revenue over time, and are there any seasonal patterns?" | Group by with calculation |
 | "What payment methods are most popular?" | Aggregation on payment_history |
-| "List all organic products in the Produce category" | Filter with text matching |
+| "How do payment methods correlate with enrollment outcomes and student characteristics?" | Filter with text matching |
 
 **What to observe:**
 - Genie shows the **SQL it generated** — click to inspect
@@ -193,12 +193,13 @@ Vector Search finds relevant documents by meaning, not just keywords.
 
 | Query | Expected Source Document |
 |-------|------------------------|
-| "Can I return perishable items?" | return_refund_policy |
-| "How do I earn loyalty points?" | membership_loyalty_program |
-| "What are your delivery hours?" | delivery_pickup_procedures |
-| "Do you accept EBT payments?" | store_operating_procedures |
-| "How do you handle product recalls?" | product_safety_recalls |
-| "What data do you collect about me?" | privacy_policy |
+| "What are the consequences for academic integrity violations, and how does the policy address AI-generated content?" | academic_integrity |
+| "What percentage of tuition can I get back if I withdraw from a course in week 3, and what are the exceptions to the standard refund policy?" | tuition_refund |
+| "How many absences can I have before my grade is affected, and what qualifies as an excused absence?" | attendance_policy |
+| "What is the GPA scale, and what happens if my GPA falls below 2.0?" | grading_policy |
+| "What student information is considered "directory information" that can be shared without my consent, and how do I opt out?" | privacy_policy |
+| "What behaviors are prohibited under the student conduct policy, and what are the reporting procedures for harassment or safety violations?" | 	
+student_conduct |
 
 **What to observe:**
 - Results include a **similarity score** (closer to 1.0 = better match)
@@ -212,13 +213,13 @@ This is where everything comes together.
 1. Open **Playground** in the left sidebar (under Machine Learning)
 2. Select a Foundation Model (e.g., **Claude Sonnet 4** or **Llama 3.3 70B**)
 3. Click **Add Tool** and add:
-   - Your **Genie Space** (`FreshMart Retail Data`)
+   - Your **Genie Space** (`EduPath_Academy_Data`)
    - Your **Vector Search Index** (`policy_docs_index`)
    - Your **UC Function** (if created in setup)
 4. Add a system prompt:
 
 ```
-You are FreshMart Assistant, a friendly and knowledgeable retail agent for FreshMart grocery stores. You help customers and employees with data questions about products, sales, and stores, as well as store policy inquiries.
+You are EduPath Assistant, a friendly and knowledgeable education agent for EduPath campuses. You help students and employees with data questions about courses, enrollments, and campuses, as well as campus policy inquiries.
 
 Guidelines:
 - Be conversational and helpful
@@ -232,13 +233,13 @@ Guidelines:
 5. Test these conversations:
 
 **Data question (uses Genie):**
-> "What are the top 5 products by revenue?"
+> "What are the top 5 courses by revenue?"
 
 **Policy question (uses Vector Search):**
-> "What is the return policy for perishable items?"
+> "What is the absentee policy for courses?"
 
 **Multi-tool question (uses both):**
-> "I bought frozen fish yesterday and it was bad. Can I return it? How much revenue are we losing to returns?"
+> "I started a course but it is too expensive. How can I change my course?"
 
 **What to observe:**
 - The agent **automatically decides** which tool to use based on the question
@@ -332,18 +333,18 @@ If you want to use the existing template in this repo:
 
 | Question | Expected Tool |
 |----------|--------------|
-| "What are the top 5 products by revenue?" | Genie |
-| "What is the return policy for perishable items?" | Vector Search |
-| "Which stores have the highest ratings?" | Genie |
-| "How do I cancel my loyalty membership?" | Vector Search |
-| "Compare our top-selling categories and check if we have return policies for each" | Both |
+| "What are the top 5 courses by revenue?" | Genie |
+| "What is the change policy for courses?" | Vector Search |
+| "Which campuses have the most students?" | Genie |
+| "How do I cancel my enrollment?" | Vector Search |
+| "Compare our top-selling courses and check if we have change policies for each" | Both |
 
 4. Ask **5-10 questions** to generate enough traces for evaluation
 
 ### 4.4 Verify Traces Are Captured
 
 1. Go to **Experiments** in the left sidebar
-2. Open your experiment (`freshmart-agent-workshop`)
+2. Open your experiment (`edupath-agent-workshop-<schema>`)
 3. You should see new traces — one per conversation turn
 4. Click on a trace to see the full execution graph
 
@@ -491,7 +492,7 @@ A Knowledge Assistant is a RAG agent that answers questions from your documents 
 1. Navigate to **Machine Learning** > **Agents** (or **Agent Builder**)
 2. Click **Create** > **Knowledge Assistant**
 3. Configure:
-   - **Name:** "FreshMart Policy Assistant"
+   - **Name:** "EduPath Policy Assistant"
    - **Knowledge Source:** Select your Vector Search index (`policy_docs_index`)
    - Optionally: point to the raw documents volume for richer rendering
 4. Click **Create**
@@ -499,9 +500,9 @@ A Knowledge Assistant is a RAG agent that answers questions from your documents 
 
 | Question | Expected Behavior |
 |----------|------------------|
-| "What's the loyalty program about?" | Retrieves membership_loyalty_program doc |
-| "How long do I have to return an item?" | Retrieves return_refund_policy doc |
-| "What are your privacy practices?" | Retrieves privacy_policy doc |
+| "What are the consequences for academic integrity violations, and how does the policy address AI-generated content?" | Retrieves academic_integrity doc |
+| "How many absences can I have before my grade is affected, and what qualifies as an excused absence?" | Retrieves attendance_policy doc |
+| "When can I add or drop courses, and what are the credit hour requirements for full-time status?" | Retrieves course_enrollment doc |
 
 **What to notice:** This achieves the same thing as your Vector Search tool in the custom agent — but with zero code and a managed hosting model.
 
@@ -519,9 +520,9 @@ A Supervisor Agent orchestrates multiple tools/agents, routing questions to the 
 
 | Question | Expected Routing |
 |----------|-----------------|
-| "What were last month's sales?" | → Genie |
-| "What's the return policy?" | → Vector Search |
-| "Top products and their return policies" | → Both |
+| "What were last month's enrollments?" | → Genie |
+| "What's the change policy?" | → Vector Search |
+| "Top courses and their attendance policies" | → Both |
 
 ### 7.3 Comparing Approaches
 
@@ -576,56 +577,3 @@ Both are production-ready. Choose based on your needs: simple use cases get mana
 - **Permission issues:** Contact your workspace administrator
 
 ---
-
-## Appendix
-
-### Sample Test Questions
-
-**Data queries (Genie):**
-1. "How many customers do we have?"
-2. "What are the top 10 products by price?"
-3. "Show revenue by store for the last 6 months"
-4. "Which membership tier spends the most on average?"
-5. "What's the average transaction value per day of week?"
-6. "List all organic products under $5"
-7. "Which store has the most employees?"
-8. "Show me payment method distribution by membership tier"
-
-**Policy lookups (Vector Search):**
-1. "What is the return policy for perishable items?"
-2. "How do I earn loyalty points?"
-3. "What are your delivery hours and zones?"
-4. "Do you accept EBT or SNAP benefits?"
-5. "How do you handle product recalls?"
-6. "What personal data do you collect?"
-7. "Can I return opened items?"
-8. "What are holiday store hours?"
-
-**Multi-tool questions (both):**
-1. "I bought frozen fish and it was bad — can I return it? How much revenue do we lose to returns?"
-2. "What are our most popular products and what's the return policy for them?"
-3. "Which stores have the lowest ratings, and what does our customer service policy say about complaints?"
-4. "Show me high-value customers and explain what loyalty benefits they get"
-5. "What categories drive the most revenue, and do we have safety policies for those product types?"
-
-**Edge cases (test agent limits):**
-1. "What's the weather like today?" (out of scope)
-2. "Delete all customer records" (should refuse)
-3. "Tell me about competitor pricing" (no data available)
-
-### Sample System Prompt Variations
-
-**Concise assistant:**
-```
-You are FreshMart Assistant. Answer questions using Genie (data) and Vector Search (policies). Be brief and cite your sources.
-```
-
-**Customer-facing agent:**
-```
-You are a friendly FreshMart customer service agent. Help customers with questions about products, orders, returns, and store policies. Always be empathetic and solution-oriented. Use Genie for order/product lookups and Vector Search for policy information.
-```
-
-**Internal analytics agent:**
-```
-You are an analytics assistant for FreshMart management. Provide data-driven insights about sales, customer behavior, and store performance. When asked about policies, reference the official documents. Always include relevant numbers and trends.
-```
