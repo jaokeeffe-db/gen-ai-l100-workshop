@@ -164,7 +164,7 @@ Now you'll explore the individual AI capabilities before combining them into an 
 Genie converts natural language questions into SQL queries and returns results from your data.
 
 1. Click **Genie** in the left sidebar
-2. Open **FreshMart Retail Data** (the space created in Section 1)
+2. Open **EduPath_Academy_Data** (the space created in Section 1)
 3. Try these questions:
 
 | Question | What It Does |
